@@ -1,0 +1,32 @@
+<template>
+    <div onclick={checkOpacityClick} class="toggle-modal modal fade in modal-opacity-sfdc header-mob-search-show" role="dialog">
+        <div class="modal-dialog readlater-popup-block">
+          <!-- Modal content-->
+          <div class="modal-content readlater-popup">
+            <div class="modal-header popup-header">
+              <button type="button" onclick={closeCreateFolderPopup} class="close close-popup" data-dismiss="modal">
+                <img src={closePopupImage} class="close-popup" />
+              </button>
+              <h4 class="modal-title">{formInfo.createEditHeaderToggle}</h4>
+            </div>
+            <div class="modal-footer create-folder-align ">
+              <div class="col-xs-12">
+                <h5 class="required-label">Folder Name</h5>
+                <input type="text" value={editFolderName} maxlength="25" name="input" class="col-xs-12" />
+                <div class="invalid-feedback">
+                  {invalidFeedback}
+                </div>
+                <!-- <textarea class="col-xs-12" rows="2" name="" form=""></textarea> -->
+              </div>
+              <div class="col-xs-12">
+                <h5 >Short description(optional)</h5>
+                <textarea class="col-xs-12" id="desc"  rows="4" maxlength="100" name="desc" form="">{editFolderDesc}</textarea>
+              </div>
+              <div class="col-xs-12">
+                <a class="btn btn-info col-xs-12 createbtn" data-id = {formInfo.createEditToggle}  onclick={createNewFolder}>{formInfo.createEditToggle}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</template>

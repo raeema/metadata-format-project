@@ -1,0 +1,911 @@
+<template>
+  <div class="container clearboth createarticle-block" style="position: relative;">
+    <div tabindex="0" data-id="error">
+      <template if:true={mandatory}>
+        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+          <span class="slds-assistive-text">error</span>
+          <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small"
+            title="Description of icon when needed">
+            <svg class="slds-icon slds-icon_x-small" aria-hidden="true">
+              <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#error"></use>
+            </svg>
+          </span>
+          {errorMessage}
+          <div class="slds-notify__close icon" onclick={closeErrorMessage}>
+            <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+              title="Close"></lightning-icon>
+          </div>
+        </div>
+      </template>
+    </div>
+    <template if:true={showSpinner}>
+      <lightning-spinner class="posFixed" alternative-text="Loading" size="medium"></lightning-spinner>
+    </template>
+    <div class="col-xs-12 create-article card">
+      <div class="col-xs-12 thirteen-list-block nopadding">
+        <div if:false={isAutoDisable} class="thirteen-list pull-right list-block col-xs-11 col-sm-7 col-md-6">
+
+          <a class="btn btn-default browse-article" if:true={actionButtonVisibilty.cancel} data-name="admin"
+            data-title="Admin" onclick={cancelArticle}>Cancel</a>
+          <a class="btn btn-default upload-article preview-article visible-lg" data-id="saveAsDraft"
+            onclick={onPreviewArticle}>Preview</a>
+          <a class="btn btn-default upload-article" if:true={actionButtonVisibilty.saveAsDraft} data-id="saveAsDraft"
+            onclick={handleCallbackToApex}>Save as Draft</a>
+          <a class="btn btn-info Sumbit-article" if:true={actionButtonVisibilty.publish} data-id="submit"
+            onclick={handleCallbackToApex}>Update</a>
+          <a class="btn btn-info Sumbit-article" if:false={actionButtonVisibilty.publish} data-id="submit"
+            onclick={handleCallbackToApex}>Publish</a>
+          <a class="btn btn-default upload-article" if:true={actionButtonVisibilty.publish} data-id="unpublish"
+            onclick={handleUnpublish}>UnPublish</a>
+
+        </div>
+        <div if:true={isAutoDisable} class="thirteen-list pull-right list-block col-xs-11 col-sm-7 col-md-6">
+
+          <a disabled=true class="btn btn-default browse-article" if:true={actionButtonVisibilty.cancel}
+            data-name="admin" data-title="Admin">Cancel</a>
+          <a disabled=true class="btn btn-default upload-article preview-article visible-lg"
+            data-id="saveAsDraft">Preview</a>
+          <a disabled=true class="btn btn-default upload-article" if:true={actionButtonVisibilty.saveAsDraft}
+            data-id="saveAsDraft">Save as Draft</a>
+          <a disabled=true class="btn btn-info Sumbit-article" if:true={actionButtonVisibilty.publish}
+            data-id="submit">Update</a>
+          <a disabled=true class="btn btn-info Sumbit-article" if:false={actionButtonVisibilty.publish}
+            data-id="submit">Publish</a>
+          <a disabled=true class="btn btn-default upload-article" if:true={actionButtonVisibilty.publish}
+            data-id="unpublish">UnPublish</a>
+
+        </div>
+      </div>
+      <div if:true={isBuName} class="col-xs-12 eight-list-block nopadding">
+
+        <div class="eight-list  list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val0} </span>
+          <h5 class="required-label">Business Unit</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+          <p class="infoimg-btn">Business Unit: <img src={ComponentImage} class="img-responsive info-img icon"
+              data-tooltip title='Select business unit'></p>
+
+
+          <c-Tp-Dual-List-Box if:true={isBuName} data-id="BuName" page-action={pageAction}
+            choose-list-label={allbusinessUnitData.chooseListLabel}
+            selected-list-label={allbusinessUnitData.selectedListLabel} all-value={allbusinessUnitData.chooseValue}
+            all-value-selected={allbusinessUnitData.selectedValue}
+            ondispatchvalueparent={getSelectedBuLst}></c-Tp-Dual-List-Box>
+        </div>
+
+      </div>
+      <div class="col-xs-12 eight-list-block nopadding">
+        <div class="eight-list  list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val1} </span>
+          <h5 class="required-label">Content Group</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 nopadding">
+            <div class="col-xs-12 col-sm-7 nopadding dropdown-menu-search">
+              <c-tp-dropdown filterval={contentGroupValue} if:true={isDropdown}
+                slected-value={createArticleData.contentGroupValue} oncategoryvalselected={getDropDownValue}>
+              </c-tp-dropdown>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-12 third-list-block nopadding">
+        <div class="third-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val2} </span>
+          <h5 class="required-label">Headline and Body</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <h6>Title is limited to 100 characters or less, including spaces</h6>
+          <div class="col-xs-12 nopadding ">
+            <textarea class="col-xs-12 title-article" maxlength="99" data-id="articleTitle" rows="1" name=""
+              placeholder="Title" form="" onchange={initiateAutoSave}>{createArticleData.articleTitle}</textarea>
+            <!--<textarea class="col-xs-12 title-article" data-id="articleOpenAI" rows="1" name="" placeholder="Open AI" form="" onchange={initiateAutoSave}>{createArticleData.articleTitle}</textarea>-->
+            <div>
+              <div class="slds-grid" style="display: inline-flex">
+              <Lightning-input variant="label-hidden" type=checkbox data-element="NeedAICheckbox" name='NeedAI'
+              value={createArticleData.geoTarget} onchange={handleNeedAICheckBox}
+              class="createArticleCheckBox_Style" style="padding-bottom: 5px"></Lightning-input>
+              <h6 style="font-weight:bold;color:black;">Need AI Assistance to build Body content? (OPTIONAL)</h6>
+            </div>
+              <div if:true={enableNeedAIAssistance} class="slds-grid" style="justify-content: space-between; align-items: end; margin-bottom: 20px;">
+                <lightning-textarea type="text" class="openaitextarea UIInputTextareaHeight" placeholder="Add your prompt or ask your question here and tap arrow."
+                  variant="standard" value={promptMsg} disabled={viewMode}></lightning-textarea>
+                <lightning-button class="sendButtonIcon" icon-name="utility:send" variant="neutral"
+                  onclick={sendTextToOpenAi} type="button"></lightning-button>
+              </div>
+            </div>
+            <div class="col-xs-12 nopadding" style="overflow: auto;padding-top: 30px;"><!--style="height: 400px;"-->
+              <c-tp-Article-Editor folder-name={folderName} html-editor-allowed={htmlEditorAllowed}
+                articleid={createArticleData.articleId} onfileupload={handleTinyFileUploaded}></c-tp-Article-Editor>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--<div class="col-xs-12 forth-list-block nopadding">
+        <div class="forth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val3} </span>
+          <h5>Pronto Links: <img src={ComponentImage} class="img-responsive info-img dis-inline icon" data-tooltip
+              title={helpText.prontoHelpTxt}></h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 nopadding ">
+            <textarea class="col-xs-7 massEmail-article" rows="1" data-id="prontoArticle" name=""
+              placeholder="Enter links separated by semicolon(;) e.g. abbviepronto://xxxx - Article Name"
+              form="">{createArticleData.prontoArticle}</textarea>
+
+          </div>
+        </div>
+      </div>-->
+
+      <div class="col-xs-12 tenth-list-block nopadding">
+        <div class="tenth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val3} </span>
+          <h5 class="required-label">Thumbnail Image <span class="tooltip-text">Help</span><img src={ComponentImage}
+              class="img-responsive info-img dis-inline icon" data-tooltip title={helpText.thumbnailImageHelpTxt}></h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-7"></div>
+
+          <div class="col-xs-12 nopadding documents-form">
+            <div class="col-xs-12 nopadding ">
+              <div class="col-xs-4 nopadding files-text">
+                <textarea class="col-xs-12 " rows="1" name="" placeholder="Thumbnail Image" form=""></textarea>
+              </div>
+
+              <div class="col-xs-7">
+                <a class="btn btn-default browse-article" onclick={uploadTumbnailImage}>Browse</a>
+                <template if:true={openmodal}>
+                  <!-- modal start -->
+                  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                    aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container modalContainer_Thumbnail">
+                      <!-- modal header start -->
+                      <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                          title="Close" onclick={uploadTumbnailImage}>
+                          <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                          <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_large slds-hyphenate">Upload Thumbnail Image
+                        </h2>
+                      </header>
+                      <!-- modal body start -->
+                      <div class="slds-modal__content slds-p-around_medium thumbnailPopUp_Body" id="modal-content-id-1">
+
+                        <!-- Upload New Thumbnail Block -->
+                        <div class="text-center col-sm-12 col-md-12 col-lg-12" id="uploadFileHeader"
+                          style="padding-bottom: 10px; padding-top: 20px;">
+                          <p>You can upload a JPG,PNG OR GIF file. Maximum file size is 2 MB</p>
+                        </div>
+                        <div class="text-center col-sm-12 col-md-12 col-lg-12"
+                          style="display: flex;     padding-bottom: 20px;">
+                          <div class="text-center col-sm-6 col-md-6 col-lg-6 thumbnail_UploadButton">
+                            <p>
+                              <span
+                                class="slds-file-selector__button slds-button slds-button_neutral cursor_pointer uploadButton"
+                                onclick={openGallery}>Upload Thumbnail</span>
+                              <input type="file" name="pic" onchange={updatedThumbnailPicture}
+                                class="hideOption dragDropInputStyle" accept="image/png,image/jpg,image/gif, image/jpeg"
+                                data-id="picture">
+                            </p>
+                          </div>
+                          <div class="text-center col-sm-6 col-md-6 col-lg-6">
+                            <div>Selected Thumbnail:</div>
+                            <div class="imgRectangle">
+                              <img class="thumbnail" src={SelectedScr} data-id="currentPhoto">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-xs-12" style="color:#dc3545;" if:true={isInvalidFile}>
+                          {TP_thumbnailSizeErrorMessage}</div>
+                        <hr>
+
+
+
+                        <!-- List of Thumbnails Block -->
+                        <div class="thumbnailContainer col-sm-12 col-md-12 col-lg-12">
+                          <div class="col-sm-12 col-md-12 col-lg-12 nullPadding">
+                            <input class="form-control searchbar" maxlength="50" type="text" placeholder="Search"
+                              aria-label="Search" onkeyup={handleSearchFilter}>
+                          </div>
+                          <div class="col-sm-12 col-md-12 col-lg-12 thumbnail_HeaderText nullPadding">Available
+                            Thumbnails: </div>
+                          <div class="col-sm-12 col-md-12 col-lg-12 thumbnail_ListBlock">
+                            <template for:each={filteredThumbnailToDisplay} for:item='thumbnail'>
+                              <a if:true={thumbnail.isSelected} key={thumbnail.Id}
+                                class="col-sm-12 col-md-12 col-lg-12 thumbnailFile nullPadding anchorTagStyle">
+                                <img src={thumbnail.thumbURL} class="thumnail_ImageList disabled-cls">&nbsp;
+                                <!--<textarea class="col-xs-11 curson-default thumnailName disabled-cls" rows="1" name="" placeholder="Thumbnail Name" form="" readonly data-name="captureName" >{thumbnail.thumName}</textarea>-->
+                                <p class="col-xs-11 curson-default thumnailName textAreaTitleAlignment disabled-cls"
+                                  rows="1" name="" placeholder="Thumbnail Name" form="" readonly
+                                  data-name="captureName">{thumbnail.thumName}</p>
+                              </a>
+                              <a if:false={thumbnail.isSelected} onclick={getThumbnailUrl} href="#uploadFileHeader"
+                                key={thumbnail.Id} data-id={thumbnail.Id} data-thumid={thumbnail.thumbID}
+                                data-thumburl={thumbnail.thumbURL} data-thumbname={thumbnail.thumName}
+                                class="col-sm-12 col-md-12 col-lg-12 thumbnailFile nullPadding anchorTagStyle"><!--data-thumbtype={thumbnail.thumbType} data-thumbversion={thumbnail.thumbVersion}-->
+                                <img src={thumbnail.thumbURL} class="thumnail_ImageList">&nbsp;
+                                <!--<textarea class="col-xs-11 curson-default thumnailName" rows="1" name="" placeholder="Thumbnail Name" form="" readonly data-name="captureName" >{thumbnail.thumName}</textarea>-->
+                                <p class="col-xs-11 curson-default thumnailName textAreaTitleAlignment" rows="1" name=""
+                                  placeholder="Thumbnail Name" form="" readonly data-name="captureName">
+                                  {thumbnail.thumName}</p>
+                              </a>
+                            </template>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- modal footer start-->
+                      <footer class="slds-modal__footer thumbnail_popUpBtnBlock">
+                        <button class="slds-button slds-button btn btn-info savebtn-popup"
+                          onclick={saveProfilePicture}>Insert</button>
+                        <button class="slds-button btn btn-default " onclick={uploadTumbnailImage}>Cancel</button>
+                      </footer>
+                    </div>
+                  </section>
+                  <div class="slds-backdrop slds-backdrop_open"></div>
+                  <!-- modal end -->
+                </template>
+              </div>
+              <div class="col-xs-12 nopadding">
+                <div class="col-xs-6 nopadding">
+                  <template if:true={showthumbnailClose}>
+                    <a class="btn btn-default uploaded-article" onclick={handleThumbnailPiles}>
+                      {createArticleData.thumbnailName}
+                      <img src={uploadedCloseImage} class="img-responsive uploaded-close">
+                    </a>
+                  </template>
+                </div>
+              </div>
+              <div class="col-xs-12 col-sm-7 nopadding">
+                <div class="col-xs-12 nopadding ">
+                  <div class="col-xs-7 nopadding">
+                    <h6>Allow Thumbnail on Article View</h6>
+                  </div>
+                  <div class="col-xs-5 ">
+                    <label class="switch-toggle">
+                      <input type="checkbox" data-id="changeThumbnailToggle" onchange={handleThumbnailToggle}>
+                      <span class="slider round"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xs-12 seven-list-block nopadding">
+        <div class="seven-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val4} </span>
+          <h5>Creator</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 nopadding ">
+            <div>
+              <textarea data-id="creator" class="col-xs-7 readonly-sfdc" rows="1" name="" placeholder="" form=""
+                disabled> {createArticleData.creatorName}</textarea>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xs-12 seven-list-block nopadding">
+        <div class="seven-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val5} </span>
+          <h5 class="required-label">Contact Info</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 nopadding ">
+            <h6>Contact Name</h6>
+            <div class="col-xs-7 nopadding">
+              <textarea data-id='contactName' class="col-xs-12" rows="1" name="" placeholder="Add/Search Contact Name"
+                onkeyup={handleContactNameChange} form="" maxlength="200">{createArticleData.contactName}</textarea>
+              <div class="add-icon" data-id="contactNameAdd" onclick={handleAddContact}>
+                <lightning-icon icon-name="utility:add" alternative-text="Add" title="Add"></lightning-icon>
+              </div>
+              <c-tp-contact-suggestion data-id="contactDropDown" class="col-xs-7"
+                oncontactdata={handleContactData}></c-tp-contact-suggestion>
+            </div>
+            <div class="col-xs-7 nopadding">
+              <template for:each={contactData.name} for:item='value'>
+                <a class="btn btn-default uploaded-article" data-id="contactNameVal" data-ind={value.ind}
+                  onclick={removeContactData} key={value.ind}>
+                  {value.value}
+                  <img src={uploadedCloseImage} data-section="documentImageAudio" class="img-responsive uploaded-close">
+                </a>
+              </template>
+            </div>
+
+
+          </div>
+          <div class="col-xs-12 nopadding ">
+            <h6>Contact Email</h6>
+            <div class="col-xs-7 nopadding">
+              <textarea data-id='contactEmail' class="col-xs-12 massEmail-article" rows="1" name=""
+                placeholder="Enter Email Addresses To Be Added" form=""
+                maxlength="200">{createArticleData.contactEmail}</textarea>
+              <div class="add-icon" data-id="contactEmailAdd" onclick={handleAddContact}>
+                <lightning-icon icon-name="utility:add" alternative-text="Add" title="Add"></lightning-icon>
+              </div>
+            </div>
+
+            <div class="col-xs-7 nopadding">
+              <template for:each={contactData.email} for:item='value'>
+                <a class="btn btn-default uploaded-article" data-id="contactEmailVal" data-ind={value.ind}
+                  onclick={removeContactData} key={value.ind}>
+                  {value.value}
+                  <img src={uploadedCloseImage} data-section="documentImageAudio" class="img-responsive uploaded-close">
+                </a>
+              </template>
+            </div>
+
+          </div>
+          <div class="col-xs-12 nopadding ">
+            <h6>Contact Website</h6>
+            <div class="col-xs-7 nopadding">
+              <textarea data-id='contactWebsite' class="col-xs-12" rows="1" name="" placeholder="" form=""
+                maxlength="200">{createArticleData.contactWebsite}</textarea>
+              <div class="add-icon" data-id="contactWebsiteAdd" onclick={handleAddContact}>
+                <lightning-icon icon-name="utility:add" alternative-text="Add" title="Add"></lightning-icon>
+              </div>
+            </div>
+            <div class="col-xs-7 nopadding">
+              <template for:each={contactData.website} for:item='value'>
+                <a class="btn btn-default uploaded-article" data-id="contactWebsiteVal" data-ind={value.ind}
+                  onclick={removeContactData} key={value.ind}>
+                  {value.value}
+                  <img src={uploadedCloseImage} data-section="documentImageAudio" class="img-responsive uploaded-close">
+                </a>
+              </template>
+            </div>
+          </div>
+          <div class="col-xs-12 nopadding ">
+            <h6>Contact Phone</h6>
+            <div class="col-xs-7 nopadding">
+              <textarea data-id='contactPhone' class="col-xs-12" rows="1" name="" placeholder="" form=""
+                maxlength="200">{createArticleData.contactPhone}</textarea>
+              <div class="add-icon" data-id="contactPhoneAdd" onclick={handleAddContact}>
+                <lightning-icon icon-name="utility:add" alternative-text="Add" title="Add"></lightning-icon>
+              </div>
+            </div>
+            <div class="col-xs-7 nopadding">
+              <template for:each={contactData.phone} for:item='value'>
+                <a class="btn btn-default uploaded-article" data-id="contactPhoneVal" data-ind={value.ind}
+                  onclick={removeContactData} key={value.ind}>
+                  {value.value}
+                  <img src={uploadedCloseImage} data-section="documentImageAudio" class="img-responsive uploaded-close">
+                </a>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xs-12 tenth-list-block nopadding">
+        <div class="tenth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val6} </span>
+          <h5>Attachments <img src={ComponentImage} class="img-responsive info-img dis-inline icon" data-tooltip
+              title={helpText.attachmentsHelpTxt}></h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-7"></div>
+
+          <div class="col-xs-12 nopadding documents-form">
+            <div class="col-xs-12 nopadding ">
+              <div class="col-xs-4 nopadding files-text">
+                <textarea class="col-xs-12 " rows="1" name="" placeholder="Attachments" form=""></textarea>
+              </div>
+
+              <div class="col-xs-7">
+                <a class="btn btn-default browse-article" onclick={alterVideoBrowserModalDoc}>Browse</a>
+                <template if:true={docBrowse}>
+                  <c-tp-Upload-Popup allowed-format={attachmentAllowed} desktop=true amazone-s3=true
+                    ondatafromuploadmodal={handleDatauploadModal} folder-name={folderName}
+                    onclosemodal={alterVideoBrowserModalDoc}></c-tp-Upload-Popup>
+                </template>
+
+              </div>
+              <div class="col-xs-12 nopadding">
+                <div class="col-xs-6 nopadding">
+                  <template for:each={documentImageAudio} for:item='value'>
+                    <a key={value.s3Link} data-id={value.ind} class="btn btn-default uploaded-article"
+                      onclick={handleAttachPiles}>
+                      {value.fileName}
+                      <img src={uploadedCloseImage} data-section="documentImageAudio" data-name={value.s3Link}
+                        class="img-responsive uploaded-close">
+                    </a>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xs-12 tenth-list-block nopadding">
+        <div class="tenth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val7} </span>
+          <h5>Videos <img src={ComponentImage} class="img-responsive info-img dis-inline icon" data-tooltip
+              title={helpText.videosHelpTxt}></h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-7"></div>
+          <div class="col-xs-12 nopadding documents-form">
+            <div class="col-xs-12 nopadding ">
+              <div class="col-xs-4 nopadding files-text">
+                <textarea class="col-xs-12 " rows="1" name="" placeholder="Videos" form=""></textarea>
+              </div>
+              <div class="col-xs-7">
+                <a href="javascript:void(0);" class="btn btn-default browse-article"
+                  onclick={alterVideoBrowserModal}>Browse</a>
+                <template if:true={videoBrowse}>
+                  <c-tp-Upload-Popup brightcove=true onclosemodal={alterVideoBrowserModal}
+                    ondatafromuploadmodal={handleDatauploadModal}></c-tp-Upload-Popup>
+                </template>
+
+              </div>
+              <div class="col-xs-12 nopadding">
+                <div class="col-xs-6 nopadding">
+                  <template for:each={videoData} for:item='value'>
+                    <a href="javascript:void(0);" key={value.fileName} class="btn btn-default uploaded-article"
+                      data-id={value.ind} onclick={handleVideoPiles}>
+                      {value.fileName}
+                      <img src={uploadedCloseImage} class="img-responsive uploaded-close">
+                    </a>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="col-xs-12 second-list-block nopadding">
+        <div class="second-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val8} </span>
+          <h5>Add Slideshow <img src={ComponentImage} class="img-responsive info-img dis-inline icon" data-tooltip
+              title={helpText.addSlideshowHelpTxt}></h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 nopadding ">
+            <div class="col-xs-4 nopadding files-text">
+              <textarea class="col-xs-12 " rows="1" name="" placeholder="Add Slideshow" form=""></textarea>
+            </div>
+            <div class="col-xs-7">
+              <a class="btn btn-default browse-article" onclick={alertSlideshowBrowser}>Browse</a>
+              <template if:true={slideshowBrowse}>
+                <!-- Original Code -->
+                <!-- <c-tp-Upload-Popup allowed-format={slideShowAllowed} desktop=true amazone-s3=true ondatafromuploadmodal={handleslideShowData} folder-name = {folderName} onclosemodal={alertSlideshowBrowser}></c-tp-Upload-Popup> -->
+
+                <!-- Testing the -->
+                <c-tp-Upload-Popup-Sample slideshowdata={slideShowData} allowed-format={slideShowAllowed} desktop=true
+                  amazone-s3=true ondatafromuploadmodal={handleslideShowData} folder-name={folderName}
+                  onclosemodal={alertSlideshowBrowser}></c-tp-Upload-Popup-Sample>
+              </template>
+            </div>
+            <div class="col-xs-12 nopadding">
+              <div class="col-xs-6 nopadding">
+                <template for:each={slideShowData} for:item='value'>
+                  <a key={value.s3Link} data-id={value.ind} class="btn btn-default uploaded-article"
+                    onclick={handleSlideshowPiles}>
+                    {value.fileName}
+                    <img src={uploadedCloseImage} data-section="documentImageAudio" data-name={value.s3Link}
+                      class="img-responsive uploaded-close">
+                  </a>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--Commenting Calender Event as per the requirement -10th April 2024-->
+      <!--<div class="col-xs-12 ninth-list-block nopadding">
+        <div class="ninth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val9} </span>
+          <h5>Calendar Event <img src={ComponentImage} class="img-responsive info-img dis-inline icon" data-tooltip
+              title={helpText.calendarEventHelpTxt}></h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 col-sm-7 nopadding ">
+            <div class="col-xs-6 padding-23 nopadding">
+              <h6>Start Date</h6>
+              <c-tp-Date-Picker data-id="startDate" selected={createArticleData.calendarStartDate}
+                ondateselect={handleStartDate}></c-tp-Date-Picker>
+            </div>
+            <div class="col-xs-6 nopadding">
+              <h6>Start Time</h6>
+              <c-tp-time-drop-down data-id="startTime" selected={createArticleData.calendarStartTime}
+                ondispatchvalueparent={handleEvtStartTime}></c-tp-time-drop-down>
+            </div>
+          </div>
+          <div class="col-xs-12 nopadding">
+            <div class="col-xs-12 col-sm-7 nopadding">
+              <div class="col-xs-6 padding-23 nopadding">
+                <h6>End Date</h6>
+                <c-tp-Date-Picker data-id="endDate" selected={createArticleData.calendarEndDate}
+                  ondateselect={handleEndDate}></c-tp-Date-Picker>
+              </div>
+              <div class="col-xs-6 nopadding">
+                <h6>End Time</h6>
+                <c-tp-time-drop-down data-id="endTime" selected={createArticleData.calendarEndTime}
+                  ondispatchvalueparent={handleEvtEndTime}></c-tp-time-drop-down>
+              </div>
+            </div>
+          </div>
+          <div class="col-xs-12 nopadding ">
+            <h6>Calendar Title</h6>
+            <textarea class="col-xs-12 col-sm-7" rows="1" name="" data-id="calenderTitle" maxlength="100"
+              placeholder="Enter the title" form="">{createArticleData.eventTitle}</textarea>
+          </div>
+          <div class="col-xs-12 nopadding ">
+            <h6>Calendar Description</h6>
+            <textarea class="col-xs-12 col-sm-7" rows="5" name="" data-id="calenderDescription"
+              placeholder="Enter the description" form="">{createArticleData.eventDescription}</textarea>
+          </div>
+          <div class="col-xs-12 nopadding ">
+            <div class="col-xs-12 col-sm-7 nopadding">
+              <button class="btn btn-default pull-right clear-description" onclick={clearCalender}>Clear</button>
+            </div>
+          </div>
+        </div>
+      </div>-->
+
+      <div class="col-xs-12 first-list-block nopadding">
+        <div class="first-list  list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val9} </span>
+          <h5 class="required-label">Select Category</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <h6>Select category where your news should appear</h6>
+          <div class="col-xs-7 nopadding dropdown-menu-search">
+            <template if:true={category.data}>
+              <c-tp-dropdown filterval={category} if:true={isDropdown} slected-value={createArticleData.category}
+                oncategoryvalselected={getDropDownValue}></c-tp-dropdown>
+            </template>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-xs-12 eleventh-list-block nopadding">
+        <div class="eleventh-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val10} </span>
+          <h5 class="required-label">Assign Franchises,Product Team, Roles & Additional Roles</h5>
+        </div>
+
+
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 nopadding">
+            <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+            <p class="infoimg-btn required-label">Franchises: <img src={ComponentImage}
+                class="img-responsive info-img icon" data-tooltip title={helpText.franchiseHelpTxt}></p>
+
+            <template if:true={isDualList}>
+              <c-Tp-Dual-List-Box data-id="Franchise" page-action={pageAction}
+                ondispatchvalueparent={getSelectedFranchiseFrmChild} choose-list-label={allFranciseData.chooseListLabel}
+                selected-list-label={allFranciseData.selectedListLabel} all-value={allFranciseData.allFrancise}
+                all-value-selected={allFranciseData.selectedValue}></c-Tp-Dual-List-Box>
+            </template>
+          </div>
+          <div if:true={allSFDCProductTeam.allRoleAdditionalRoleValues} class="col-xs-12 nopadding">
+            <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+            <p class="infoimg-btn">Product Team: <img src={ComponentImage} class="img-responsive info-img icon"
+                data-tooltip title={helpText.productTmHelpTxt}></p>
+            <c-Tp-Dual-List-Box data-id="SFDCProductTeam" page-action={pageAction}
+              ondispatchvalueparent={getSFDCProductTeam} choose-list-label={allSFDCProductTeam.chooseListLabel}
+              selected-list-label={allSFDCProductTeam.selectedListLabel}
+              all-value={allSFDCProductTeam.allRoleAdditionalRoleValues}
+              all-value-selected={allSFDCProductTeam.selectedValue}></c-Tp-Dual-List-Box>
+          </div>
+          <div class="col-xs-12 nopadding">
+            <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+            <p class="infoimg-btn required-label">Roles: <img src={ComponentImage} class="img-responsive info-img icon"
+                data-tooltip title={helpText.roleHelpTxt}></p>
+            <c-Tp-Dual-List-Box data-id="Role" page-action={pageAction} ondispatchvalueparent={getSelectedRoleFrmChild}
+              choose-list-label={allFranciseRoleData.chooseListLabel}
+              selected-list-label={allFranciseRoleData.selectedListLabel}
+              all-value={allFranciseRoleData.allRoleAdditionalRoleValues}
+              all-value-selected={allFranciseRoleData.selectedValue}></c-Tp-Dual-List-Box>
+          </div>
+          <div class="col-xs-12 nopadding">
+            <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+            <p class="infoimg-btn required-label">Additional Roles: <img src={ComponentImage}
+                class="img-responsive info-img icon" data-tooltip title={helpText.addRoleHelpTxt}></p>
+            <c-Tp-Dual-List-Box data-id="AddRole" page-action={pageAction}
+              ondispatchvalueparent={getSelectedAditionalFrmChild}
+              choose-list-label={allFranciseRoleAdditionalRlData.chooseListLabel}
+              selected-list-label={allFranciseRoleAdditionalRlData.selectedListLabel}
+              all-value={allFranciseRoleAdditionalRlData.allRoleAdditionalRoleValues}
+              all-value-selected={allFranciseRoleAdditionalRlData.selectedValue}></c-Tp-Dual-List-Box>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-12 eleventh-list-block nopadding">
+        <div class="forth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val11} </span>
+          <div class="slds-grid">
+            <Lightning-input variant="label-hidden" type=checkbox data-element="geoTargetCheckbox" name='geoLocation'
+              value={createArticleData.geoTarget} onchange={handlePopupDisclaimer}
+              class="createArticleCheckBox_Style"></Lightning-input>
+            <h5 style="padding-left: 0px;">Need Geo Targeting</h5><span style="padding-top: 10px;"> &nbsp;(Optional. If so, select Region <u>OR</u> State and City) <img style="display: inline-block;margin-bottom: 3px;" src={ComponentImage} class="img-responsive info-img icon" data-tooltip title="Select geotargeting to message field teams based on their state, city."></span>
+          </div>
+        </div>
+        <template if:true={createArticleData.geoTarget}>
+          <div class="col-xs-11 card list-inner-card">
+            <div if:false={hideRegion} class="col-xs-12 nopadding ">
+              <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+              <p class="infoimg-btn">Region: <img src={ComponentImage} class="img-responsive info-img icon" data-tooltip
+                  title={helpText.regionHelpTxt}></p>
+              <!--<h6>You can select up to  Regions</h6>-->
+              <template if:true={allRegionData.allRegion}>
+                <c-Tp-Dual-List-Box data-id="Region" page-action={pageAction} ondispatchvalueparent={getSelectedRegion}
+                  choose-list-label={allRegionData.chooseListLabel} selected-list-label={allRegionData.selectedListLabel}
+                  all-value={allRegionData.allRegion} selectedlimit="5"
+                  all-value-selected={allRegionData.selectedValue}></c-Tp-Dual-List-Box> </template>
+
+            </div>
+            <div if:false={hideStateAndCity} class="col-xs-12 nopadding ">
+              <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+              <p class="infoimg-btn">State: <img src={ComponentImage} class="img-responsive info-img icon" data-tooltip
+                  title={helpText.stateHelpTxt}></p>
+              <h6>You can select up to 5 States</h6>
+              <template if:true={allStateData.allState}>
+                <c-Tp-Dual-List-Box data-id="State" page-action={pageAction} ondispatchvalueparent={getSelectedState}
+                  choose-list-label={allStateData.chooseListLabel} selected-list-label={allStateData.selectedListLabel}
+                  all-value={allStateData.allState} selectedlimit="5"
+                  all-value-selected={allStateData.selectedValue} hide-choose-all=true></c-Tp-Dual-List-Box> </template>
+
+            </div>
+            <div if:false={hideStateAndCity} class="col-xs-12 nopadding">
+              <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+              <p class="infoimg-btn">City: <img src={ComponentImage} class="img-responsive info-img icon" data-tooltip
+                  title={helpText.cityHelpTxt}></p>
+              <h6>You can select up to 60 Cities</h6>
+              <template if:true={allCityData.allCity}>
+                <c-Tp-Dual-List-Box data-id="City" page-action={pageAction} ondispatchvalueparent={getSelectedCity}
+                  choose-list-label={allCityData.chooseListLabel} selected-list-label={allCityData.selectedListLabel} selectedlimit="60"
+                  all-value={allCityData.allCity} all-value-selected={allCityData.selectedValue} hide-choose-all=true></c-Tp-Dual-List-Box>
+              </template>
+
+            </div>
+            <!--<div class="col-xs-12 nopadding">
+              <h6>Hold down "Control", or "Command" on a Mac, to select more than one</h6>
+              <p class="infoimg-btn">Zip: <img src={ComponentImage} class="img-responsive info-img icon" data-tooltip
+                  title={helpText.zipHelpTxt}></p>
+
+              <template if:true={allZipData.allZip}>
+                <c-Tp-Dual-List-Box data-id="Zip" removeselectandremoveall="true" page-action={pageAction} ondispatchvalueparent={getSelectedZip}
+                  choose-list-label={allZipData.chooseListLabel} selected-list-label={allZipData.selectedListLabel} selectedlimit="90"
+                  all-value={allZipData.allZip} all-value-selected={allZipData.selectedValue}></c-Tp-Dual-List-Box>
+              </template>
+
+            </div>-->
+          </div>
+        </template>
+      </div>
+
+      <div class="col-xs-12 forth-list-block nopadding">
+        <div class="forth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val12} </span>
+          <h5>Optional Email: <img src={ComponentImage} class="img-responsive info-img dis-inline icon" data-tooltip
+              title={helpText.massEmailHelpTxt}></h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 nopadding ">
+            <textarea class="col-xs-7 massEmail-article" rows="1" maxlength="1000" data-id="massEmailAddress" name=""
+              placeholder="Enter email addresses separated by semicolon(;)"
+              form="">{createArticleData.massEmailAddress}</textarea>
+
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-xs-12 first-list-block nopadding">
+        <div class="first-list  list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val13} </span>
+          <h5 class="required-label">Select Article Audience</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-7 nopadding dropdown-menu-search">
+            <template if:true={audience.data}>
+              <c-tp-dropdown filterval={audience} if:true={isDropdown} slected-value={createArticleData.audience}
+                oncategoryvalselected={getDropDownValue}></c-tp-dropdown>
+            </template>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div class="col-xs-12 sixth-list-block nopadding">
+        <div class="sixth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val14} </span>
+          <h5>Allow Push</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 col-sm-7 nopadding">
+            <div class="col-xs-12 nopadding ">
+              <div class="col-xs-9 nopadding">
+                <h6>Push notification on/off </h6>
+              </div>
+              <div class="col-xs-3 ">
+                <label class="switch-toggle">
+                  <input type="checkbox" data-id="changePushToggle" onchange={handlePushNotificationToggel}>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xs-12 sixth-list-block nopadding">
+        <div class="sixth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val15} </span>
+          <h5>Publish Now</h5>
+        </div>
+        <div class="col-xs-11 card list-inner-card">
+          <div class="col-xs-12 col-sm-7 nopadding">
+            <div class="col-xs-12 nopadding ">
+              <div class="col-xs-9 nopadding">
+                <h6>Publish Now Yes/No </h6>
+              </div>
+              <div class="col-xs-3 ">
+                <label class="switch-toggle">
+                  <input type="checkbox" data-id="changePublishnowToggle" onchange={handlePublishNowToggle}>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div if:false={publishLaterFlag} class="col-xs-12 twelvth-list-block nopadding">
+        <div class="twelvth-list list-block col-xs-12">
+          <span class="number-of-list"> {numbers.val16} </span>
+          <h5>Publish Later <img src={ComponentImage} class="img-responsive info-img dis-inline icon" data-tooltip
+              title={helpText.publishHelpTxt}> <text class="timeZone">{userTimeZone}</text></h5>
+        </div>
+        <!--<div class="col-xs-11 card list-inner-card">
+      <div class="col-xs-12 col-sm-7 nopadding">
+      <div class="col-xs-12 nopadding ">
+      <div class="col-xs-9 nopadding"><h6>{userTimeZone}</h6></div></div></div>
+    </div>-->
+        <div class="col-xs-11 list-inner-card">
+          <div class="col-xs-12 nopadding">
+            <div if:true={publishFlag} class="col-xs-12 col-sm-12 nopadding ">
+              <div class="publish">
+                <h6>Publish/Archive time can be manually edited or choosen from drop down value</h6>
+              </div>
+              <div>
+                <div class="col-xs-12 col-sm-6 padding-23 nopadding">
+                  <h6>Publish Date</h6>
+
+                  <c-tp-Date-Picker data-id="publishDate" selected={createArticleData.publishDate}
+                    user-current={userCurrentDate} ondateselect={handlePublishDate}></c-tp-Date-Picker>
+                </div>
+                <div class="col-xs-12 col-sm-6 padding-23 nopadding">
+                  <h6>Publish Time <text class="timeZone">{userTimeZone}</text></h6>
+                  <c-tp-time-drop-down data-id="publishTime" selected={createArticleData.publishTime}
+                    ondispatchvalueparent={handlePublishTime}></c-tp-time-drop-down>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div if:true={publishFlag}>
+            <div class="col-xs-12 nopadding">
+              <div class="col-xs-12 col-sm-12 nopadding">
+                <div class="col-xs-12 col-sm-6 padding-23 nopadding">
+                  <h6>Archive Date</h6>
+                  <c-tp-Date-Picker data-id="archiveDate" selected={createArticleData.archiveDate}
+                    ondateselect={handleArchiveDate}></c-tp-Date-Picker>
+                </div>
+                <div class="col-xs-12 col-sm-6 padding-23 nopadding">
+                  <h6>Archive Time <text class="timeZone">{userTimeZone}</text></h6>
+                  <c-tp-time-drop-down data-id="arhiveTime" selected={createArticleData.archiveTime}
+                    ondispatchvalueparent={handleArchiveTime}></c-tp-time-drop-down>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xs-12 thirteen-list-block nopadding">
+        <div if:false={isAutoDisable} class="thirteen-list pull-right list-block col-xs-12 col-sm-7 col-md-6">
+          <a class="btn btn-default browse-article" if:true={actionButtonVisibilty.cancel} data-name="admin"
+            data-title="Admin" onclick={cancelArticle}>Cancel</a>
+          <a class="btn btn-default upload-article preview-article visible-lg" data-id="saveAsDraft"
+            onclick={onPreviewArticle}>Preview</a>
+          <a class="btn btn-default upload-article" if:true={actionButtonVisibilty.saveAsDraft} data-id="saveAsDraft"
+            onclick={handleCallbackToApex}>Save as Draft</a>
+          <a class="btn btn-info Sumbit-article" if:true={actionButtonVisibilty.publish} data-id="submit"
+            onclick={handleCallbackToApex}>Update</a>
+          <a class="btn btn-info Sumbit-article" if:false={actionButtonVisibilty.publish} data-id="submit"
+            onclick={handleCallbackToApex}>Publish</a>
+          <a class="btn btn-default upload-article" if:true={actionButtonVisibilty.publish} data-id="unpublish"
+            onclick={handleUnpublish}>UnPublish</a>
+        </div>
+        <div if:true={isAutoDisable} class="thirteen-list pull-right list-block col-xs-12 col-sm-7 col-md-6">
+          <a disabled=true class="btn btn-default browse-article" if:true={actionButtonVisibilty.cancel}
+            data-name="admin" data-title="Admin">Cancel</a>
+          <a disabled=true class="btn btn-default upload-article preview-article visible-lg"
+            data-id="saveAsDraft">Preview</a>
+          <a disabled=true class="btn btn-default upload-article" if:true={actionButtonVisibilty.saveAsDraft}
+            data-id="saveAsDraft">Save as Draft</a>
+          <a disabled=true class="btn btn-info Sumbit-article" if:true={actionButtonVisibilty.publish}
+            data-id="submit">Update</a>
+          <a disabled=true class="btn btn-info Sumbit-article" if:false={actionButtonVisibilty.publish}
+            data-id="submit">Publish</a>
+          <a disabled=true class="btn btn-default upload-article" if:true={actionButtonVisibilty.publish}
+            data-id="unpublish">UnPublish</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <template if:true={showConfirmation}>
+    <c-tp-confirmation-popup onconfirmation={handleMove} message={confirmationMessage}></c-tp-confirmation-popup>
+  </template>
+
+  <!-- Modal Testing -->
+  <template if:true={openModal}>
+    <div class="toggle-modal preview-popup slds-modal modal-opacity-sfdc slds-fade-in-open " role="dialog"
+      onclick={checkOpacityClick}>
+      <div class="modal-dialog readlater-popup-block-sfdc preview-popup-dialog" style="background-color: white">
+        <!-- Modal content-->
+        <div class="modal-content readlater-popup">
+          <div class="modal-header popup-header">
+            <button type="button" onclick={closeModal} class="close close-popup" data-dismiss="modal">
+              <img src={closePopupImage} class="close-popup" data-tooltip title={helpText.previewHelpTxt} />
+            </button>
+          </div>
+          <c-tp-article-view for-preview=true articleidforpreview={articleIdforpreview}></c-tp-article-view>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- OpenAI Result Modal -->
+  <template if:true={openAIModal}>
+    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+      class="slds-modal slds-fade-in-open">
+      <div class="slds-modal__container openAIModalContainer">
+        <div class="slds-modal__header slds-grid headerBlockModal_OpenAI">
+          <h1 id="modal-heading-09" class="slds-text-heading_large slds-hyphenate textALign_left headerTextOpenAI">AI
+            Assistance</h1>
+          <lightning-button-icon class="closeIconModalopenAI" icon-name="utility:close" title="Close"
+            onclick={handleCloseAIAssit}></lightning-button-icon>
+        </div>
+        <div class="slds-modal__content openAiModalContent slds-p-around_medium" id="modal-content-id-9">
+          <lightning-layout multiple-rows size="12">
+            <lightning-layout-item size="12" small-device-size="12" medium-device-size="12" large-device-size="12">
+              <lightning-formatted-rich-text value={AiAssistanceVerbiage}> </lightning-formatted-rich-text>
+            </lightning-layout-item>
+          </lightning-layout>
+          <template if:true={isDisplayNoAI}>
+            <div class="slds-align_absolute-center">
+              <br />
+              Please add your prompt for assistance
+            </div>
+          </template>
+          <br />
+        </div>
+        <div class="slds-modal__footer">
+          <button class="slds-button btn btn-default " onclick={handleCloseAIAssit}>Close</button>
+          <button class="slds-button slds-button btn btn-info savebtn-popup" onclick={sendTextToOpenAi}>Show More
+            Options</button>
+        </div>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+  </template>
+</template>
